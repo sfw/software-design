@@ -1,0 +1,609 @@
+name: prd-software-design
+version: "1.0"
+schema_version: 2
+description: >
+  End-to-end product specification workflow that turns a project goal into a
+  complete Product Requirements Document (PRD) and Software Design
+  Specification package ready for agentic engineering execution, with
+  structured human-in-the-loop intake and traceable implementation planning.
+author: "Loom Community"
+tags: [prd, product-requirements, software-design, architecture, implementation-planning, agentic-engineering]
+risk_level: medium
+
+persona: |
+  You are a principal product manager and staff software architect working as a
+  single specification lead. You produce decision-ready artifacts for both
+  product and engineering teams, and you optimize for implementation clarity,
+  testability, and handoff quality.
+
+  You must always:
+  - Separate confirmed facts, stakeholder decisions, assumptions, and open questions.
+  - Write requirements that are unambiguous and testable.
+  - Make tradeoffs explicit and log key decisions.
+  - Produce implementation guidance suitable for agentic coding workflows.
+
+phase_mode: strict
+
+validity_contract:
+  enabled: true
+  claim_extraction:
+    enabled: true
+  critical_claim_types: [numeric, date, entity_fact]
+  min_supported_ratio: 0.8
+  max_unverified_ratio: 0.2
+  max_contradicted_count: 0
+  prune_mode: rewrite_uncertainty
+  require_fact_checker_for_synthesis: false
+  final_gate:
+    enforce_verified_context_only: true
+    synthesis_min_verification_tier: 2
+    critical_claim_support_ratio: 1.0
+
+tool_guidance: |
+  Use ask_user for stakeholder clarification instead of guessing.
+  Use CSV for structured specifications (requirements catalogs, traceability,
+  execution plans). Use Markdown for narrative specifications and rationale.
+
+  Human-in-the-loop protocol for intake phase:
+  - Ask yes/no/custom questions using ask_user with options: ["Yes", "No", "Custom"].
+  - If "Custom" is chosen, immediately ask one follow-up free-text question.
+  - If ask_user returns a non-interactive placeholder (for example text
+    beginning with "QUESTION:"), treat that item as unresolved stakeholder
+    input, not as a confirmed answer.
+  - Capture every answer in interview-log.csv with a stable question_id.
+  - If a critical answer is missing, label it as an assumption and add a
+    validation item to assumptions-and-open-questions.md.
+
+tools:
+  guidance: >
+    Use ask_user for decisions, read/write/document tools for artifacts,
+    spreadsheet for requirement and traceability matrices, and web_search/
+    web_fetch only when additional external evidence is needed.
+  required: [ask_user, web_search, web_fetch, read_file, write_file, document_write, spreadsheet, search_files, calculator]
+  excluded: [delete_file, shell_execute, git_command]
+
+phases:
+  - id: intake-and-interview
+    description: >
+      Run a structured stakeholder interview to clarify goals, constraints,
+      scope, risk appetite, compliance requirements, and decision boundaries.
+      Build a high-fidelity intake baseline before drafting requirements.
+    depends_on: []
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Interview log includes at least 18 targeted questions spanning product,
+      technical, security, and delivery dimensions. Each answer is tagged as
+      yes/no/custom and linked to a requirement area or decision area.
+      Unanswered critical questions are explicitly tracked as assumptions.
+    deliverables:
+      - "project-intake.md — normalized project goal, context, and stakeholder intent"
+      - "interview-log.csv — question_id, question, answer_type, answer, impact_area, follow_up_required"
+      - "decision-register.csv — explicit decisions with owner, rationale, and status"
+      - "assumptions-and-open-questions.md — unresolved items and validation plan"
+
+  - id: context-and-constraints-discovery
+    description: >
+      Analyze workspace artifacts and available references to establish current
+      state, constraints, dependencies, and baseline architecture context.
+    depends_on: [intake-and-interview]
+    model_tier: 2
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Existing assets, constraints, and dependencies are documented with source
+      references. Unknowns are separated from confirmed constraints.
+    deliverables:
+      - "context-brief.md — current-state context, business environment, and baseline assumptions"
+      - "existing-system-inventory.csv — systems, repositories, interfaces, owners"
+      - "constraints-register.csv — business, technical, legal, timeline, and budget constraints"
+
+  - id: requirements-and-success-metrics
+    description: >
+      Author a complete PRD with functional requirements, non-functional
+      requirements, scope boundaries, success metrics, and explicit acceptance
+      criteria aligned to business outcomes.
+    depends_on: [context-and-constraints-discovery]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      PRD includes problem statement, target users, goals/non-goals, functional
+      and non-functional requirements, success metrics, and release intent.
+      Requirements are uniquely identified and testable.
+    deliverables:
+      - "prd.md — full product requirements document"
+      - "requirements-catalog.csv — REQ IDs, statements, priority, rationale, acceptance tests"
+      - "success-metrics.md — outcome metrics, guardrails, and measurement cadence"
+      - "non-functional-requirements.csv — performance, reliability, security, privacy, accessibility, operability"
+
+  - id: user-experience-and-scope-design
+    description: >
+      Translate requirements into user journeys, story mapping, and phased
+      release scope that clarifies MVP boundaries and follow-on increments.
+    depends_on: [requirements-and-success-metrics]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Core user journeys map to requirements and success metrics. MVP vs later
+      scope is explicit, and story coverage includes primary roles and critical
+      edge cases.
+    deliverables:
+      - "user-journeys.md — primary and alternate user journeys with goals and pain points"
+      - "user-story-map.csv — stories mapped to journeys, requirements, and releases"
+      - "release-scope-plan.csv — MVP/incremental scope with inclusion rationale"
+
+  - id: software-architecture-and-data-design
+    description: >
+      Produce a software design specification covering architecture views,
+      component responsibilities, data models, and interface contracts.
+    depends_on: [user-experience-and-scope-design]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Design spec defines system boundaries, major components, data flow,
+      integration contracts, and key tradeoffs. Each major requirement traces
+      to at least one design element.
+    deliverables:
+      - "software-design-spec.md — complete software design specification"
+      - "architecture-view.md — context/container/component architecture narrative"
+      - "data-model-and-state.md — entities, relationships, lifecycle/state transitions"
+      - "api-and-integration-contracts.md — API/interface contracts and integration assumptions"
+
+  - id: quality-security-and-operations-design
+    description: >
+      Define quality attribute targets, security/compliance controls,
+      observability requirements, and test strategy needed for reliable
+      implementation and operation.
+    depends_on: [software-architecture-and-data-design]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Quality, security, and operational requirements are actionable with clear
+      targets (e.g., SLOs), verification approach, and ownership assumptions.
+    deliverables:
+      - "test-strategy.md — unit/integration/e2e/acceptance testing strategy"
+      - "quality-attributes-and-slos.md — quality targets and service level objectives"
+      - "security-and-compliance-plan.md — threat, control, and compliance requirements"
+      - "observability-and-runbooks.md — logs/metrics/traces/alerts and operational runbook expectations"
+
+  - id: implementation-planning-and-adrs
+    description: >
+      Convert product and design artifacts into a sequenced implementation plan
+      optimized for agentic engineers, including ADRs and risk-managed delivery
+      sequencing.
+    depends_on: [quality-security-and-operations-design]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    acceptance_criteria: >
+      Plan is dependency-aware, milestone-based, and broken into executable
+      increments. ADRs capture major technical choices and tradeoffs.
+    deliverables:
+      - "implementation-roadmap.md — phased delivery plan with milestones and dependencies"
+      - "agent-execution-plan.csv — implementation tasks with input artifacts, done criteria, and validation gates"
+      - "adr-log.md — architecture decision records with status/context/decision/consequences"
+      - "dependency-and-risk-register.csv — delivery dependencies, risks, owners, and mitigations"
+      - "handoff-checklist.md — readiness checklist and outstanding approvals"
+
+  - id: traceability-and-final-handoff
+    description: >
+      Assemble final handoff package that integrates PRD and software design
+      outputs, validates requirement traceability end-to-end, and highlights
+      unresolved decisions requiring human confirmation.
+    depends_on: [implementation-planning-and-adrs]
+    model_tier: 3
+    verification_tier: 2
+    is_critical_path: true
+    is_synthesis: true
+    validity_contract:
+      min_supported_ratio: 0.9
+      max_unverified_ratio: 0.1
+      final_gate:
+        synthesis_min_verification_tier: 2
+        critical_claim_support_ratio: 1.0
+    iteration:
+      enabled: true
+      max_attempts: 3
+      strategy: targeted_remediation
+      stop_on_no_improvement_attempts: 0
+      max_total_runner_invocations: 4
+      max_replans_after_exhaustion: 1
+      replan_on_exhaustion: true
+      iteration_budget:
+        max_wall_clock_seconds: 900
+        max_tokens: 120000
+        max_tool_calls: 25
+      gates:
+        - id: package-has-prd-section
+          type: artifact_regex
+          blocking: true
+          target: deliverables
+          pattern: "(?im)^##\\s+Product Requirements Document\\b"
+          expect_match: true
+        - id: package-has-design-section
+          type: artifact_regex
+          blocking: true
+          target: deliverables
+          pattern: "(?im)^##\\s+Software Design Specification\\b"
+          expect_match: true
+        - id: package-no-placeholders
+          type: artifact_regex
+          blocking: true
+          target: deliverables
+          pattern: "\\[TBD\\]|\\[TODO\\]|\\[INSERT\\]|\\[PLACEHOLDER\\]"
+          expect_match: false
+    acceptance_criteria: >
+      Final package includes complete PRD + software design synthesis,
+      requirement traceability from goal to design to execution tasks, and
+      explicit unresolved questions/assumptions for stakeholder signoff.
+    deliverables:
+      - "requirements-traceability-matrix.csv — requirement-to-design-to-test-to-task mapping"
+      - "specification-package.md — unified PRD and software design handoff document"
+
+tests:
+  - id: smoke
+    mode: deterministic
+    goal: "Create a full PRD and software design package for a new project goal."
+    timeout_seconds: 1200
+    requires_tools:
+      - ask_user
+      - web_search
+      - web_fetch
+      - read_file
+      - write_file
+      - document_write
+      - spreadsheet
+      - search_files
+      - calculator
+    acceptance:
+      phases:
+        must_include: [intake-and-interview, context-and-constraints-discovery, requirements-and-success-metrics, user-experience-and-scope-design, software-architecture-and-data-design, quality-security-and-operations-design, implementation-planning-and-adrs, traceability-and-final-handoff]
+      deliverables:
+        must_exist: [project-intake.md, interview-log.csv, decision-register.csv, assumptions-and-open-questions.md, context-brief.md, existing-system-inventory.csv, constraints-register.csv, prd.md, requirements-catalog.csv, success-metrics.md, non-functional-requirements.csv, user-journeys.md, user-story-map.csv, release-scope-plan.csv, software-design-spec.md, architecture-view.md, data-model-and-state.md, api-and-integration-contracts.md, test-strategy.md, quality-attributes-and-slos.md, security-and-compliance-plan.md, observability-and-runbooks.md, implementation-roadmap.md, agent-execution-plan.csv, adr-log.md, dependency-and-risk-register.csv, requirements-traceability-matrix.csv, specification-package.md, handoff-checklist.md]
+      verification:
+        forbidden_patterns: ["Expected deliverable '.*' not found", "\\[TBD\\]|\\[TODO\\]|\\[INSERT\\]|\\[PLACEHOLDER\\]"]
+
+  - id: live-canary
+    mode: live
+    goal: "Develop an implementation-ready PRD and software design package with human-in-the-loop intake."
+    timeout_seconds: 1800
+    requires_network: true
+
+verification:
+  policy:
+    mode: llm_first
+    static_checks:
+      tool_success_policy: safety_integrity_only
+      file_integrity_policy: enforce_nonempty_changed_files
+      syntax_policy: enforce_parseable_artifacts
+      deliverable_existence_policy: enforce_declared_deliverables
+    semantic_checks:
+      - id: process-rules
+        check: "Apply process-defined verification rules and acceptance criteria."
+        severity: error
+        enforcement: hard
+        scope: phase
+    output_contract:
+      required_fields:
+        - passed
+        - outcome
+        - reason_code
+        - severity_class
+        - confidence
+        - feedback
+        - issues
+        - metadata
+      metadata_fields:
+        - interview_coverage
+        - requirement_count
+        - traceability_coverage
+        - unresolved_questions_count
+        - remediation_required
+    outcome_policy:
+      pass_states: [pass, pass_with_warnings, partial_verified]
+      fail_states: [fail]
+  remediation:
+    strategies:
+      - id: targeted-remediation
+        retry_strategy: unconfirmed_data
+        description: "Perform focused edits for failing checks while preserving validated sections."
+    default_strategy: targeted-remediation
+    critical_path_behavior: block
+    retry_budget:
+      max_attempts: 2
+    transient_retry_policy:
+      retry_on_transient: true
+  rules:
+    - name: no-placeholders
+      description: "No placeholder text in deliverables"
+      check: "\\[TBD\\]|\\[TODO\\]|\\[INSERT\\]|\\[PLACEHOLDER\\]|XX%|N/A"
+      severity: error
+      type: regex
+      target: deliverables
+      enforcement: hard
+      applies_to_phases: ["*"]
+
+    - name: interview-completeness
+      description: "Interview artifacts must reflect structured yes/no/custom intake"
+      check: >
+        Verify interview-log.csv contains a stable question_id, question text,
+        answer_type, and answer value for each captured response. Confirm
+        answer_type uses yes/no/custom semantics, that there are at least 18
+        unique question_id entries (excluding header rows), and unresolved
+        critical items are present in assumptions-and-open-questions.md.
+      severity: error
+      type: llm
+      applies_to_phases: [intake-and-interview]
+
+    - name: no-ask-user-placeholder-leak
+      description: "Do not treat ask_user placeholder output as real stakeholder input"
+      check: "(?m)^QUESTION:\\s"
+      severity: error
+      type: regex
+      target: deliverables
+      applies_to_phases: [intake-and-interview]
+
+    - name: requirements-testability
+      description: "Requirements must be specific and testable"
+      check: >
+        Validate requirements-catalog.csv entries are unambiguous, actionable,
+        and have testable acceptance criteria. Flag vague requirements lacking
+        measurable conditions.
+      severity: error
+      type: llm
+      applies_to_phases: [requirements-and-success-metrics]
+
+    - name: nfr-coverage
+      description: "Non-functional requirements must cover key quality dimensions"
+      check: >
+        Ensure non-functional-requirements.csv and quality-attributes-and-slos.md
+        explicitly cover performance, reliability, security, privacy,
+        accessibility, and operability with measurable targets or rationale.
+      severity: error
+      type: llm
+      applies_to_phases: [requirements-and-success-metrics, quality-security-and-operations-design]
+
+    - name: architecture-requirement-alignment
+      description: "Design outputs must trace back to requirements"
+      check: >
+        Confirm software design artifacts map major requirements to architecture
+        components, data flows, and integration contracts. Flag design sections
+        with no requirement linkage.
+      severity: error
+      type: llm
+      applies_to_phases: [software-architecture-and-data-design, traceability-and-final-handoff]
+
+    - name: security-and-operations-readiness
+      description: "Security, compliance, and operations details must be implementation-ready"
+      check: >
+        Verify security-and-compliance-plan.md and observability-and-runbooks.md
+        define concrete controls, monitoring expectations, and operational
+        response guidance rather than generic statements.
+      severity: error
+      type: llm
+      applies_to_phases: [quality-security-and-operations-design, traceability-and-final-handoff]
+
+    - name: agent-execution-granularity
+      description: "Execution plan must be granular enough for agentic implementation"
+      check: >
+        Evaluate agent-execution-plan.csv and implementation-roadmap.md for
+        task granularity, explicit dependencies, clear done criteria, and
+        validation gates suitable for autonomous or semi-autonomous engineers.
+      severity: error
+      type: llm
+      applies_to_phases: [implementation-planning-and-adrs, traceability-and-final-handoff]
+
+    - name: traceability-matrix-completeness
+      description: "Traceability matrix must connect requirements to design, tests, and tasks"
+      check: >
+        Verify requirements-traceability-matrix.csv links each in-scope
+        requirement to at least one design element, one validation/test item,
+        and one implementation task. Flag orphaned requirements.
+      severity: error
+      type: llm
+      applies_to_phases: [traceability-and-final-handoff]
+
+    - name: specification-package-structure
+      description: "Unified handoff package must include both PRD and software design sections"
+      check: >
+        Verify specification-package.md explicitly includes section headings
+        for "Product Requirements Document" and "Software Design Specification".
+        Fail if either section is missing or represented only as a passing mention.
+      severity: error
+      type: llm
+      applies_to_phases: [traceability-and-final-handoff]
+
+evidence:
+  record_schema:
+    required_fields: [evidence_id, tool, source_url, created_at, quality]
+    facets: [target, requirement_id, component, category, risk, phase]
+  extraction:
+    include_result_facets: true
+    arg_mappings:
+      target: [target, project, system, product]
+      category: [category, domain, theme]
+      risk: [risk, severity, impact]
+  summarization:
+    max_entries: 16
+    include_facets: true
+
+prompt_contracts:
+  evidence_contract:
+    enabled: true
+    applies_to_phases: ["*"]
+  executor_constraints: |
+    During intake-and-interview, ask clarifying questions before drafting.
+    Prefer ask_user over assumptions for decision-critical unknowns.
+    For decision prompts, use options ["Yes", "No", "Custom"] and follow up
+    on "Custom" with one targeted open question.
+    If ask_user returns placeholder text starting with "QUESTION:", treat that
+    item as unresolved input and record it for human follow-up.
+    Use stable requirement IDs in format REQ-###.
+    Use RFC-style requirement language (MUST/SHOULD/MAY) only when justified.
+    Keep claims traceable to interview responses, workspace evidence, or cited
+    sources; mark inferred claims as assumptions.
+  verifier_constraints: |
+    Enforce testability, traceability, and implementation readiness.
+    Treat missing requirement-to-design-to-test mapping as a blocking defect.
+    Require unresolved assumptions/open questions to be explicit, not hidden.
+  remediation_instructions:
+    default: |
+      Preserve validated sections and patch only failing areas.
+      Prefer targeted updates to interview traceability, requirement clarity,
+      and cross-artifact consistency.
+
+memory:
+  extract_types:
+    - type: product_goal
+      description: "Stated business outcome or product objective"
+    - type: requirement_item
+      description: "Functional or non-functional requirement with identifier"
+    - type: architecture_decision
+      description: "Design decision with rationale and tradeoff"
+    - type: dependency_risk
+      description: "Dependency or execution risk affecting delivery"
+    - type: open_question
+      description: "Unresolved decision requiring stakeholder input"
+    - type: validation_obligation
+      description: "Required validation/test step tied to requirement coverage"
+  extraction_guidance: |
+    Prioritize reusable decisions and constraints that materially affect
+    implementation sequencing, architecture, and delivery risk.
+
+workspace_analysis:
+  scan_for:
+    - "**/README.md — project context and setup"
+    - "**/docs/**/*.md — existing product/design documentation"
+    - "**/*.yaml — API/config specs"
+    - "**/*.yml — API/config specs"
+    - "**/*.json — machine-readable schemas or exports"
+    - "**/openapi*.yaml — API contracts"
+    - "**/openapi*.json — API contracts"
+    - "**/adr*.md — architecture decisions"
+  guidance: |
+    Reuse existing product and technical artifacts where credible and current.
+    Prefer aligning with existing architecture and constraints over inventing
+    new assumptions.
+
+planner_examples:
+  - goal: "Create a PRD and software design for a multi-tenant B2B SaaS feature with strict audit logging."
+    subtasks:
+      - id: intake-and-interview
+        description: "Collect stakeholder constraints, compliance needs, and release expectations."
+        depends_on: []
+        model_tier: 3
+      - id: context-and-constraints-discovery
+        description: "Audit existing architecture, integrations, and organizational constraints."
+        depends_on: [intake-and-interview]
+        model_tier: 2
+      - id: requirements-and-success-metrics
+        description: "Produce structured PRD requirements and measurable outcomes."
+        depends_on: [context-and-constraints-discovery]
+        model_tier: 3
+      - id: user-experience-and-scope-design
+        description: "Define key journeys, story map, and phased scope boundaries."
+        depends_on: [requirements-and-success-metrics]
+        model_tier: 3
+      - id: software-architecture-and-data-design
+        description: "Design architecture, data model, and API contracts for the feature."
+        depends_on: [user-experience-and-scope-design]
+        model_tier: 3
+      - id: quality-security-and-operations-design
+        description: "Set quality targets, security controls, and observability requirements."
+        depends_on: [software-architecture-and-data-design]
+        model_tier: 3
+      - id: implementation-planning-and-adrs
+        description: "Build execution roadmap and ADRs for technical choices."
+        depends_on: [quality-security-and-operations-design]
+        model_tier: 3
+      - id: traceability-and-final-handoff
+        description: "Assemble final package with requirement traceability and signoff checklist."
+        depends_on: [implementation-planning-and-adrs]
+        model_tier: 3
+
+  - goal: "Define product and software specs for modernizing a legacy internal approvals platform."
+    subtasks:
+      - id: intake-and-interview
+        description: "Capture pain points, governance constraints, and migration tolerances."
+        depends_on: []
+        model_tier: 3
+      - id: context-and-constraints-discovery
+        description: "Inventory current system boundaries, dependencies, and technical debt constraints."
+        depends_on: [intake-and-interview]
+        model_tier: 2
+      - id: requirements-and-success-metrics
+        description: "Define measurable target outcomes and modernization requirements."
+        depends_on: [context-and-constraints-discovery]
+        model_tier: 3
+      - id: user-experience-and-scope-design
+        description: "Map role-based journeys and staged migration scope."
+        depends_on: [requirements-and-success-metrics]
+        model_tier: 3
+      - id: software-architecture-and-data-design
+        description: "Design transition architecture and integration contracts."
+        depends_on: [user-experience-and-scope-design]
+        model_tier: 3
+      - id: quality-security-and-operations-design
+        description: "Define reliability, security, and operational readiness targets."
+        depends_on: [software-architecture-and-data-design]
+        model_tier: 3
+      - id: implementation-planning-and-adrs
+        description: "Sequence migration-friendly implementation increments with ADR rationale."
+        depends_on: [quality-security-and-operations-design]
+        model_tier: 3
+      - id: traceability-and-final-handoff
+        description: "Deliver final traceability package and signoff checklist."
+        depends_on: [implementation-planning-and-adrs]
+        model_tier: 3
+
+  - goal: "Generate complete specs for a new mobile-first customer onboarding workflow with external verification APIs."
+    subtasks:
+      - id: intake-and-interview
+        description: "Clarify onboarding outcomes, risk controls, and data/privacy expectations."
+        depends_on: []
+        model_tier: 3
+      - id: context-and-constraints-discovery
+        description: "Gather current API, app, and compliance context from available artifacts."
+        depends_on: [intake-and-interview]
+        model_tier: 2
+      - id: requirements-and-success-metrics
+        description: "Specify onboarding requirements, NFRs, and success metrics."
+        depends_on: [context-and-constraints-discovery]
+        model_tier: 3
+      - id: user-experience-and-scope-design
+        description: "Map onboarding journeys, edge flows, and release scope boundaries."
+        depends_on: [requirements-and-success-metrics]
+        model_tier: 3
+      - id: software-architecture-and-data-design
+        description: "Design service boundaries, API contracts, and data lifecycle constraints."
+        depends_on: [user-experience-and-scope-design]
+        model_tier: 3
+      - id: quality-security-and-operations-design
+        description: "Define verification resiliency, security controls, and monitoring strategy."
+        depends_on: [software-architecture-and-data-design]
+        model_tier: 3
+      - id: implementation-planning-and-adrs
+        description: "Create implementation task graph and ADRs for major tradeoffs."
+        depends_on: [quality-security-and-operations-design]
+        model_tier: 3
+      - id: traceability-and-final-handoff
+        description: "Finalize unified PRD+SDS package with end-to-end traceability."
+        depends_on: [implementation-planning-and-adrs]
+        model_tier: 3
+
+replanning:
+  triggers: |
+    - Stakeholder answers are insufficient to define critical requirements.
+    - Constraints conflict in ways that break architecture or scope feasibility.
+    - Key integration or compliance context is missing after discovery attempts.
+    - Traceability matrix reveals major orphaned requirements.
+  guidance: |
+    If critical requirements are unresolved, run a focused follow-up interview
+    and update assumptions/open questions before proceeding. If constraints
+    conflict, branch options and document tradeoffs explicitly before
+    final synthesis.
