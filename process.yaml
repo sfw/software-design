@@ -1,5 +1,5 @@
 name: prd-software-design
-version: "1.0"
+version: "1.1"
 schema_version: 2
 description: >
   End-to-end product specification workflow that turns a project goal into a

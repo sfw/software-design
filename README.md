@@ -38,6 +38,45 @@ This package uses updated process definition fields:
 - phase-level `validity_contract` override on synthesis
 - phase `iteration` gates on final handoff quality
 
+## Sealed Artifact Mutation Protocol (Maintainers)
+
+This package is YAML-only and currently ships **no bundled custom tools** under
+`tools/`. Workspace mutation is performed by required built-in tools:
+
+- `write_file` (mutating)
+- `document_write` (mutating)
+- `spreadsheet` (mutating for write/update operations)
+
+Non-mutating required tools in this package are `ask_user`, `web_search`,
+`web_fetch`, `read_file`, `search_files`, and `calculator`.
+
+If you add bundled tools later, upgrade every workspace-writing tool to the
+sealed-artifact mutation contract:
+
+1. Set `is_mutating = True`.
+2. Return accurate workspace-relative `files_changed` for every successful
+   write/move/delete path.
+3. Expose `mutation_target_arg_keys` for non-`path` arguments (for example
+   `output_path`, `destination`) so sealed policy targeting works.
+4. Keep path resolution workspace-scoped and normalized.
+
+Policy/reseal expectations for maintainers:
+
+- Preflight must block sealed+verified mutation without post-seal confirmation
+  evidence, emitting `sealed_policy_preflight_blocked`.
+- The same mutation is allowed when proper post-seal evidence is present.
+- Any successful mutation on tracked sealed paths triggers reseal/provenance and
+  emits `sealed_reseal_applied` (tool-agnostic behavior; no hardcoded tool names).
+- Keep post-call rollback/guard as defense-in-depth only, honoring
+  `execution.sealed_artifact_post_call_guard = off|warn|enforce` (target default:
+  `off`; set explicitly in runtime config if your Loom baseline differs).
+  Unexpected writes detected there should emit `sealed_unexpected_mutation_detected`.
+
+Regression guard:
+
+- Do not special-case `edit_file`; protocol enforcement must remain generic and
+  preserve existing `edit_file` behavior.
+
 ## Installation
 
 From a local path:
